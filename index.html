@@ -77,18 +77,46 @@ input[type="checkbox"]{accent-color:var(--mrv-green);cursor:pointer;}
 /* ---------- Dropdown de filtro de empreendimentos no topo ---------- */
 .dropdown-container{position:relative;display:inline-block;}
 .fpanel{
-  display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:100;width:320px;
+  display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:100;width:340px;
   background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,.15);padding:10px;text-align:left;font-weight:400;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);padding:12px;text-align:left;font-weight:400;
 }
 .fpanel.show{display:block;}
-.fpanel input[type="text"]{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;margin-bottom:8px;}
-.flist{max-height:260px;overflow-y:auto;border-top:1px solid var(--line-soft);padding-top:6px;}
+.fpanel input[type="text"]{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-size:13px;margin-bottom:8px;}
+
+/* Estilização melhorada do cabeçalho do filtro */
+.fhead{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:8px;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--line-soft);
+  font-size:12px;
+  color:var(--ink-dim);
+}
+.fhead-actions{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.fhead-actions a{
+  color:var(--mrv-green);
+  font-weight:700;
+  text-decoration:none;
+  cursor:pointer;
+}
+.fhead-actions a:hover{
+  text-decoration:underline;
+}
+.fhead-sep{
+  color:var(--line);
+  user-select:none;
+}
+
+.flist{max-height:260px;overflow-y:auto;padding-top:4px;}
 .flist label{display:flex;gap:8px;align-items:center;padding:4px 2px;font-size:13px;cursor:pointer;}
 .flist label:hover{background:#F0F4F8;}
-.fhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:var(--ink-dim);}
-.fhead a{color:var(--mrv-green);font-weight:700;text-decoration:none;cursor:pointer;}
-.fhead a:hover{text-decoration:underline;}
 
 /* ---------- Tabela dinâmica ---------- */
 table.pivot{width:100%;border-collapse:collapse;font-size:15px;min-width:980px;}
@@ -120,50 +148,9 @@ table.pivot{width:100%;border-collapse:collapse;font-size:15px;min-width:980px;}
 }
 
 .empty{padding:30px;text-align:center;color:var(--ink-dim);}
-
-/* ---------- Botão de Restaurar Controles (Modo Print) ---------- */
-#btnRestoreUI{
-  display:none;position:fixed;top:12px;right:12px;z-index:9999;
-  background:var(--ink);color:#fff;border:none;border-radius:6px;
-  padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;
-  box-shadow:0 4px 12px rgba(0,0,0,.2);
-}
-
-/* MODOS DE TELA E IMPRESSÃO (SÓ TABELA NO PRINT) */
-body.clean-mode .titleblock,
-body.clean-mode .filters,
-body.clean-mode .notice{
-  display:none !important;
-}
-body.clean-mode #btnRestoreUI{
-  display:block !important;
-}
-body.clean-mode .shell{
-  padding:10px !important;
-  max-width:100% !important;
-}
-body.clean-mode .panel{
-  border:none !important;
-  box-shadow:none !important;
-  padding:0 !important;
-  background:transparent !important;
-}
-
-@media print {
-  body, html { background:#fff !important; color:#000 !important; padding:0 !important; margin:0 !important; }
-  .titleblock, .filters, .notice, #btnRestoreUI, .fpanel { display:none !important; }
-  .shell, .panel, .table-scroll { padding:0 !important; margin:0 !important; border:none !important; box-shadow:none !important; overflow:visible !important; width:100% !important; }
-  table.pivot { width:100% !important; min-width:0 !important; font-size:11px !important; }
-  .pivot th, .pivot td { padding:4px 6px !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-  .pivot tr { page-break-inside:avoid !important; break-inside:avoid !important; }
-  .pivot thead { display:table-header-group !important; }
-  .tg { display:none !important; }
-}
 </style>
 </head>
 <body>
-
-<button id="btnRestoreUI">Exibir controles (ESC)</button>
 
 <div class="shell">
 
@@ -176,7 +163,7 @@ body.clean-mode .panel{
     <div class="notice" id="notice"></div>
 
     <div class="filters">
-      <!-- Filtro de empreendimentos realocado para o topo -->
+      <!-- Filtro de empreendimentos no topo com layout ajustado -->
       <div class="dropdown-container">
         <button class="btn" id="btnEmpDropdown">
           <span id="empDropdownLabel">Carregando empreendimentos...</span> ▾
@@ -185,8 +172,9 @@ body.clean-mode .panel{
           <input type="text" id="empSearch" placeholder="Pesquisar...">
           <div class="fhead">
             <span id="empCount"></span>
-            <div>
-              <a id="empAll" style="margin-right:8px;">Selecionar todos</a>
+            <div class="fhead-actions">
+              <a id="empAll">Selecionar todos</a>
+              <span class="fhead-sep">|</span>
               <a id="empClear">Limpar seleção</a>
             </div>
           </div>
@@ -196,7 +184,6 @@ body.clean-mode .panel{
 
       <button class="btn" id="btnExpand">Expandir tudo</button>
       <button class="btn" id="btnCollapse">Recolher tudo</button>
-      <button class="btn" id="btnCleanToggle" title="Oculta o topo para você tirar print somente da tabela">Ocultar topo (para Print)</button>
     </div>
 
     <div class="table-scroll">
@@ -226,9 +213,9 @@ body.clean-mode .panel{
    ===================================================================== */
 const BASE_URL = './';
 const CB = `?t=${Date.now()}`;
-const URL_ETQ  = `${BASE_URL}REL_ETQCMCUNICPE.xlsx${CB}`;   // estoque, tipologia, avaliação, valor do imóvel
-const URL_DTL  = `${BASE_URL}REL_DTLPCOIMV.xlsb${CB}`;      // Leitura em .xlsb
-const URL_CONS = `${BASE_URL}Consulta.xlsx${CB}`;           // CPV e premissas de margem por unidade
+const URL_ETQ  = `${BASE_URL}REL_ETQCMCUNICPE.xlsx${CB}`;
+const URL_DTL  = `${BASE_URL}REL_DTLPCOIMV.xlsb${CB}`;
+const URL_CONS = `${BASE_URL}Consulta.xlsx${CB}`;
 
 const BP_PAGADORIA = 500;
 
@@ -420,17 +407,16 @@ function render(){
       html += rowHTML('r-mod', mod, 'ind2', kMod, aggregate(mList));
       if (!expanded.has(kMod)) return;
 
-      // ORDENAÇÃO DE TIPOLOGIAS:
-      // Mais baratas primeiro; Quintais (Qui) sempre em último lugar.
+      // Tipologias do mais barato pro mais caro (Quintais/Qui sempre em último)
       const tips = [...groupBy(mList, u => u.tipologia).entries()]
         .map(([tip, tList]) => ({ tip, tList, agg: aggregate(tList) }))
         .sort((a, b) => {
           const isQuiA = a.tip.toLowerCase().includes('qui');
           const isQuiB = b.tip.toLowerCase().includes('qui');
-          if (isQuiA !== isQuiB) return isQuiA ? 1 : -1; // Quintais por último
+          if (isQuiA !== isQuiB) return isQuiA ? 1 : -1;
           const priceA = a.agg.avg ?? 0;
           const priceB = b.agg.avg ?? 0;
-          if (priceA !== priceB) return priceA - priceB; // Mais barato primeiro
+          if (priceA !== priceB) return priceA - priceB;
           return cmp(a.tip, b.tip);
         });
 
@@ -454,7 +440,7 @@ function afterFilterChange(){
   updateFilterUI();
 }
 
-/* ---------- Filtro de Empreendimentos no Topo ---------- */
+/* ---------- Filtro de Empreendimentos ---------- */
 function updateFilterUI(){
   const label = document.getElementById('empDropdownLabel');
   if (selEmps.size === allEmps.length) {
@@ -518,16 +504,6 @@ function initUI(){
 
   document.getElementById('btnExpand').addEventListener('click', () => { expandAll(); render(); });
   document.getElementById('btnCollapse').addEventListener('click', () => { expanded.clear(); render(); });
-
-  // Alternar modo limpo (para capturar print sem o topo)
-  const toggleCleanMode = () => document.body.classList.toggle('clean-mode');
-  document.getElementById('btnCleanToggle').addEventListener('click', toggleCleanMode);
-  document.getElementById('btnRestoreUI').addEventListener('click', toggleCleanMode);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && document.body.classList.contains('clean-mode')) {
-      document.body.classList.remove('clean-mode');
-    }
-  });
 
   afterFilterChange();
 }
