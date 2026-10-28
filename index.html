@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Precificação · Estoque Livre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#F1F3F6;
+  --panel:#FFFFFF;
+  --panel-alt:#F8F9FA;
+  --line:#E2E5E9;
+  --line-soft:#ECEEF1;
+  --ink:#1F242D;
+  --ink-dim:#646D7A;
+
+  /* Paleta da tabela (igual à tabela dinâmica de referência) */
+  --hdr:#006B3F;        /* cabeçalho padrão */
+  --hdr-aval:#7030A0;   /* cabeçalho "Avaliação" */
+  --hdr-mb:#00D38D;     /* cabeçalhos "% Mb" */
+  --row-emp:#FF8B22;    /* linha Empreendimento / Total Geral */
+  --row-mod:#079D56;    /* linha Módulo */
+  --mrv-green:#006B3F;
+
+  --font-body:'Averta Demo','IBM Plex Sans',sans-serif;
+  --font-bold:'Averta-Bold','Averta Demo','IBM Plex Sans',sans-serif;
+  --font-black:'Averta-Black','Averta Demo','IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--font-body);font-size:13.5px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+}
+button,input{font-family:inherit;}
+:focus-visible{outline:2px solid var(--mrv-green);outline-offset:2px;}
+input[type="checkbox"]{accent-color:var(--mrv-green);cursor:pointer;}
+
+.shell{max-width:1320px;margin:0 auto;padding:24px 24px 60px;}
+
+.titleblock{
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+  display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;
+  padding:20px 24px;margin-bottom:16px;
+}
+.tb-name{font-family:var(--font-black);font-weight:900;font-size:24px;letter-spacing:-.2px;color:#FF8B22;}
+.tb-meta{font-size:12px;color:var(--ink-dim);text-align:right;background:var(--panel-alt);padding:6px 10px;border-radius:6px;border:1px solid var(--line-soft);}
+.tb-meta b{color:var(--ink);font-weight:600;}
+
+.panel{
+  border:1px solid var(--line);background:var(--panel);border-radius:10px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);padding:22px 24px;
+}
+
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.filters select,.filters input[type="text"]{
+  border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);
+  padding:7px 10px;font-size:13px;min-width:200px;
+}
+.btn{
+  border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:6px;
+  padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;
+}
+.btn:hover{background:#F0F4F8;}
+
+.notice{
+  margin:0 0 14px;padding:9px 12px;border-radius:6px;font-size:12.5px;
+  background:#FEF7E0;color:#B06000;border:1px solid #F5E3A8;display:none;
+}
+.notice.show{display:block;}
+
+.table-scroll{overflow-x:auto;}
+
+/* ---------- Tabela dinâmica ---------- */
+table.pivot{width:100%;border-collapse:collapse;font-size:15px;min-width:980px;}
+.pivot th,.pivot td{padding:5px 10px;white-space:nowrap;}
+.pivot thead th{
+  color:#fff;background:var(--hdr);font-family:var(--font-bold);font-weight:700;
+  text-align:right;border-bottom:1px solid #fff;position:relative;
+}
+.pivot thead th.left{text-align:left;}
+.pivot thead th.aval{background:var(--hdr-aval);}
+.pivot thead th.mb{background:var(--hdr-mb);}
+.pivot td{text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #fff;}
+.pivot td.left{text-align:left;}
+
+.pivot tr.r-emp td,.pivot tr.r-total td{background:var(--row-emp);color:#fff;font-weight:700;}
+.pivot tr.r-mod td{background:var(--row-mod);color:#fff;font-weight:700;}
+.pivot tr.r-tip td{background:#fff;color:#000;border-bottom:1px solid var(--line-soft);}
+.pivot tr.r-tip:hover td{background:#F4F7F5;}
+.pivot tr.r-emp,.pivot tr.r-mod{cursor:pointer;}
+.pivot tr.r-emp:hover td,.pivot tr.r-mod:hover td{filter:brightness(.96);}
+.pivot td.ind1{padding-left:10px;}
+.pivot td.ind2{padding-left:28px;}
+.pivot td.ind3{padding-left:44px;}
+
+.tg{
+  display:inline-block;width:12px;height:12px;line-height:9px;margin-right:6px;
+  border:1px solid currentColor;border-radius:2px;font-size:11px;font-weight:700;
+  text-align:center;vertical-align:-1px;user-select:none;
+}
+
+/* Filtro de empreendimentos (ícone no cabeçalho, como na tabela dinâmica) */
+.fbtn{
+  display:inline-flex;align-items:center;justify-content:center;width:22px;height:20px;
+  margin-left:8px;border:1px solid #fff;border-radius:2px;background:#fff;color:#444;
+  cursor:pointer;vertical-align:middle;padding:0;
+}
+.fbtn.active{background:#FFED9A;}
+.fbtn svg{width:12px;height:12px;}
+.fpanel{
+  display:none;position:absolute;left:0;top:100%;z-index:20;width:300px;
+  background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);padding:10px;text-align:left;font-weight:400;
+}
+.fpanel.show{display:block;}
+.fpanel input[type="text"]{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;margin-bottom:8px;}
+.flist{max-height:260px;overflow-y:auto;border-top:1px solid var(--line-soft);padding-top:6px;}
+.flist label{display:flex;gap:8px;align-items:center;padding:3px 2px;font-size:13px;cursor:pointer;}
+.flist label:hover{background:#F0F4F8;}
+.fhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:var(--ink-dim);}
+.fhead a{color:var(--mrv-green);font-weight:700;text-decoration:none;cursor:pointer;}
+
+.empty{padding:30px;text-align:center;color:var(--ink-dim);}
+.foot{margin-top:12px;font-size:12px;color:var(--ink-dim);}
+
+@media (prefers-reduced-motion:no-preference){ .pivot tr.r-emp:hover td,.pivot tr.r-mod:hover td{transition:filter .12s;} }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="titleblock">
+    <div><div class="tb-name">Painel de Precificação</div></div>
+    <div class="tb-meta" id="tbMeta">Carregando planilhas...</div>
+  </div>
+
+  <div class="panel">
+    <div class="notice" id="notice"></div>
+
+    <div class="filters">
+      <select id="fRegional"><option value="">Todas as regionais</option></select>
+      <button class="btn" id="btnExpand">Expandir tudo</button>
+      <button class="btn" id="btnCollapse">Recolher tudo</button>
+    </div>
+
+    <div class="table-scroll">
+      <table class="pivot" id="pivot">
+        <thead>
+          <tr>
+            <th class="left">Empreendimento
+              <button class="fbtn" id="btnEmpFilter" title="Filtrar empreendimentos" aria-label="Filtrar empreendimentos">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14l-5.5 6.5V14l-3-1.5V8.5z"/></svg>
+              </button>
+              <div class="fpanel" id="empPanel">
+                <input type="text" id="empSearch" placeholder="Pesquisar...">
+                <div class="fhead"><span id="empCount"></span><a id="empAll">Selecionar todos</a></div>
+                <div class="flist" id="empList"></div>
+              </div>
+            </th>
+            <th>Estoque Livre</th>
+            <th class="aval">Avaliação</th>
+            <th>Mín. $ Gerencial</th>
+            <th class="mb">Mín. % Mb</th>
+            <th>Méd. $ Gerencial</th>
+            <th class="mb">Méd. % Mb</th>
+            <th>Máx. $ Gerencial</th>
+            <th class="mb">Máx. % Mb</th>
+          </tr>
+        </thead>
+        <tbody id="pivotBody"></tbody>
+      </table>
+    </div>
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   FONTES DE DADOS
+   Os três arquivos ficam na MESMA pasta/repositório deste index.html
+   (GitHub Pages). Para ler direto do raw do GitHub, troque BASE_URL por
+   'https://raw.githubusercontent.com/USUARIO/REPO/main/'.
+   ===================================================================== */
+const BASE_URL = './';
+const CB = `?t=${Date.now()}`;
+const URL_ETQ  = `${BASE_URL}REL_ETQCMCUNICPE.xlsx${CB}`;   // estoque, tipologia, avaliação, valor do imóvel
+const URL_DTL  = `${BASE_URL}REL_DTLPCOIMV.xlsx${CB}`;      // % Valor Mínimo Imóvel (VMI) por unidade
+const URL_CONS = `${BASE_URL}Consulta.xlsx${CB}`;           // CPV e premissas de margem por unidade
+
+const BP_PAGADORIA = 500; // mesmo valor fixo do painel de avaliações
+
+/* ---------- utilidades ---------- */
+const norm = s => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+const num  = v => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/\./g,'').replace(',','.')); return isFinite(n) ? n : 0; };
+const key  = v => String(v ?? '').trim().toLowerCase();
+const esc  = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// "2,00%" -> 0.02 | 0.02 -> 0.02 | 2 -> 0.02
+function parsePct(v){
+  if (v === '' || v == null) return null;
+  if (typeof v === 'number') return Math.abs(v) > 1 ? v/100 : v;
+  const s = String(v).trim();
+  if (!s) return null;
+  const n = parseFloat(s.replace('%','').replace(/\./g,'').replace(',','.'));
+  if (!isFinite(n)) return null;
+  return s.includes('%') ? n/100 : (Math.abs(n) > 1 ? n/100 : n);
+}
+
+// localiza coluna pelo cabeçalho (com fallback para a posição conhecida)
+function col(headerRow, name, fallback){
+  const i = headerRow.findIndex(h => norm(h) === norm(name));
+  return i >= 0 ? i : fallback;
+}
+
+/* ---------- formatação ---------- */
+const fmtN   = v => (v == null || !isFinite(v)) ? '-' : v.toLocaleString('pt-BR', {maximumFractionDigits:0});
+const fmtPct = v => (v == null || !isFinite(v)) ? '-' : (v*100).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + '%';
+
+// ordenação "estilo Excel" (ignora hífens, barras e espaços): 2Q-Qui < 2QS-c < 2QS-V < 2Q-V
+const sortKey = s => String(s).toLowerCase().replace(/[-\/\s]/g, '');
+const cmp  = (a,b) => sortKey(a).localeCompare(sortKey(b), 'pt-BR', {numeric:true});
+
+// "MOD. 1" -> "Mod. 1"
+const fmtModulo = s => { const t = String(s||'').trim().toLowerCase(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : 'Sem módulo'; };
+
+/* =====================================================================
+   PROCESSAMENTO (mesmas regras do painel de avaliações + Consulta.xlsx)
+   ===================================================================== */
+function processData(etqRows, dtlRows, consRows){
+  /* --- DTL: % Valor Mínimo Imóvel por ID da unidade --- */
+  const vmiDtl = {};
+  if (dtlRows && dtlRows.length > 5){
+    const h = dtlRows[4] || [];
+    const cId = col(h, 'ID da Unidade', 2);
+    const cVmi = col(h, 'Valor Mínimo Imóvel %', 94);
+    for (let i = 5; i < dtlRows.length; i++){
+      const r = dtlRows[i]; if (!r) continue;
+      const id = key(r[cId]); if (!id) continue;
+      const p = parsePct(r[cVmi]);
+      if (p !== null) vmiDtl[id] = p;
+    }
+  }
+
+  /* --- Consulta: CPV e premissas por unidade --- */
+  const cons = {};
+  if (consRows && consRows.length > 1){
+    const h = consRows[0];
+    const c = {
+      id:   col(h,'IdImovel',3),   cpv: col(h,'CPV',17),        cpvE: col(h,'CPV Estimado',34),
+      vmi:  col(h,'%VMI',16),      com: col(h,'% Comissão',21), cor:  col(h,'%Correção',22),
+      pdd:  col(h,'%PDD',23),      pis: col(h,'%PisCofins',24), lote: col(h,'LoteFinanciado',25)
+    };
+    for (let i = 1; i < consRows.length; i++){
+      const r = consRows[i]; if (!r) continue;
+      const id = key(r[c.id]); if (!id) continue;
+      const cpvE = r[c.cpvE];
+      cons[id] = {
+        cpv:  (cpvE === '' || cpvE == null || !isFinite(Number(cpvE))) ? num(r[c.cpv]) : Number(cpvE), // =IF(CPV Estimado="";CPV;CPV Estimado)
+        vmi:  parsePct(r[c.vmi]),
+        com:  num(r[c.com]), cor: num(r[c.cor]), pdd: num(r[c.pdd]), pis: num(r[c.pis]), lote: num(r[c.lote])
+      };
+    }
+  }
+
+  /* --- ETQ: unidades --- */
+  const units = [];
+  let livresSemCpv = 0;
+  for (let i = 7; i < etqRows.length; i++){
+    const r = etqRows[i];
+    if (!r || r.length === 0) continue;
+
+    const emp = String(r[7] ?? '').trim();
+    if (!emp) continue;
+
+    const statusUnidade = String(r[36] ?? '').trim();
+    // Estoque Livre (fórmula do painel de avaliações)
+    const livre = ['Lançado','Exclusivo Plataforma','Não Lançado','Bloqueado'].includes(statusUnidade);
+    if (!livre) continue;
+
+    const regional = String(r[0] ?? '').trim();
+    const modulo   = fmtModulo(r[15]);
+    const idUn     = key(r[6]);
+
+    const tipologiaRaw = String(r[12] ?? '').trim();
+    const giardinoRaw  = String(r[62] ?? 'NÃO').trim();
+    const varandaRaw   = String(r[63] ?? 'NÃO').trim();
+    const qtdGaragem   = Number(r[65] || 0);
+
+    const valorImovel     = Number(r[28] || 0);
+    const avaliacao       = Number(r[29] || 0);   // Avaliação Banco Empreendimento
+    const valorBomPagador = Number(r[32] || 0);
+
+    // Preço gerencial = Valor do Imóvel - Bom Pagador - BP Pagadoria (mesma fórmula do painel)
+    const gerencial = valorImovel - valorBomPagador - BP_PAGADORIA;
+
+    // Tipologia (mesma lógica do painel) no formato 2Q-V-Qui-c/ Vaga
+    let tip = tipologiaRaw;
+    if (tipologiaRaw === '1 Q' || tipologiaRaw === '1 Q + ESC') tip = '1 Q';
+    else if (tipologiaRaw === '2 Q' || tipologiaRaw === '2 Q R') tip = '2 Q';
+    tip = tip.replace(/\s+/g, '');
+    const partes = [tip];
+    if (varandaRaw  !== '' && varandaRaw.toUpperCase()  !== 'NÃO') partes.push('V');
+    if (giardinoRaw !== '' && giardinoRaw.toUpperCase() !== 'NÃO') partes.push('Qui');
+    partes.push(qtdGaragem === 0 ? 's/ Vaga' : 'c/ Vaga');
+    const tipologia = partes.join('-');
+
+    // Margem (fórmulas do Consulta.xlsx: NovoVI -> NovaROL -> NovoLB -> NovaMB)
+    let mb = null;
+    const k = cons[idUn];
+    if (k && gerencial > 0){
+      const vmi    = vmiDtl[idUn] ?? k.vmi ?? 0;                       // %VMI vem da DTL
+      const novoVI = gerencial * (1 - vmi);                            // =ValorProposta*(1-%VMI)
+      const rol    = ((novoVI * (1 - k.com - k.pdd + k.cor)) - k.lote) * (1 - k.pis);
+      const lb     = rol - k.cpv;                                      // =NovaROL - CPV(Estimado)
+      mb = rol ? lb / rol : null;                                      // =NovoLB / NovaROL
+    } else {
+      livresSemCpv++;
+    }
+
+    units.push({ regional, emp, modulo, tipologia, avaliacao, gerencial, mb });
+  }
+  return { units, livresSemCpv, nCons: Object.keys(cons).length, nVmi: Object.keys(vmiDtl).length };
+}
+
+/* ---------- agregação (Mín / Méd / Máx) ---------- */
+function aggregate(list){
+  const prices = list.map(u => u.gerencial).filter(v => v > 0);
+  const avs    = list.map(u => u.avaliacao).filter(v => v > 0);
+  const mbs    = list.map(u => u.mb).filter(v => v != null && isFinite(v));
+  const mean = a => a.length ? a.reduce((s,v) => s+v, 0) / a.length : null;
+  return {
+    n: list.length,
+    aval: mean(avs),
+    min: prices.length ? Math.min(...prices) : null,
+    avg: mean(prices),
+    max: prices.length ? Math.max(...prices) : null,
+    mb: mean(mbs)
+  };
+}
+
+function groupBy(list, fn){
+  const m = new Map();
+  list.forEach(u => { const k = fn(u); if (!m.has(k)) m.set(k, []); m.get(k).push(u); });
+  return m;
+}
+
+/* =====================================================================
+   INTERFACE
+   ===================================================================== */
+let ALL = [];
+let selEmps = new Set();
+let allEmps = [];
+const expanded = new Set();
+
+function visibleUnits(){
+  const reg = document.getElementById('fRegional').value;
+  return ALL.filter(u => (!reg || u.regional === reg) && selEmps.has(u.emp));
+}
+
+function rowHTML(cls, label, ind, toggleKey, a){
+  const tg = toggleKey ? `<span class="tg">${expanded.has(toggleKey) ? '−' : '+'}</span>` : '';
+  const attr = toggleKey ? ` data-k="${esc(toggleKey)}"` : '';
+  const mb = fmtPct(a.mb);
+  return `<tr class="${cls}"${attr}>
+    <td class="left ${ind}">${tg}${esc(label)}</td>
+    <td>${fmtN(a.n)}</td>
+    <td>${fmtN(a.aval)}</td>
+    <td>${fmtN(a.min)}</td><td>${mb}</td>
+    <td>${fmtN(a.avg)}</td><td>${mb}</td>
+    <td>${fmtN(a.max)}</td><td>${mb}</td>
+  </tr>`;
+}
+
+function render(){
+  const body = document.getElementById('pivotBody');
+  const list = visibleUnits();
+  if (!list.length){
+    body.innerHTML = `<tr><td colspan="9" class="empty">Nenhuma unidade de estoque livre para os filtros selecionados.</td></tr>`;
+    return;
+  }
+  let html = '';
+  const emps = [...groupBy(list, u => u.emp).entries()].sort((a,b) => cmp(a[0], b[0]));
+  emps.forEach(([emp, eList]) => {
+    const kEmp = 'e|' + emp;
+    html += rowHTML('r-emp', emp, 'ind1', kEmp, aggregate(eList));
+    if (!expanded.has(kEmp)) return;
+    const mods = [...groupBy(eList, u => u.modulo).entries()].sort((a,b) => cmp(a[0], b[0]));
+    mods.forEach(([mod, mList]) => {
+      const kMod = 'm|' + emp + '|' + mod;
+      html += rowHTML('r-mod', mod, 'ind2', kMod, aggregate(mList));
+      if (!expanded.has(kMod)) return;
+      const tips = [...groupBy(mList, u => u.tipologia).entries()].sort((a,b) => cmp(a[0], b[0]));
+      tips.forEach(([tip, tList]) => { html += rowHTML('r-tip', tip, 'ind3', null, aggregate(tList)); });
+    });
+  });
+  html += rowHTML('r-total', 'Total Geral', 'ind1', null, aggregate(list));
+  body.innerHTML = html;
+}
+
+function expandAll(){
+  visibleUnits().forEach(u => { expanded.add('e|' + u.emp); expanded.add('m|' + u.emp + '|' + u.modulo); });
+}
+
+function afterFilterChange(){
+  const emps = new Set(visibleUnits().map(u => u.emp));
+  if (emps.size === 1) expandAll();          // um único empreendimento: abre tudo (como na referência)
+  render();
+  updateFilterUI();
+}
+
+/* ---------- painel de filtro de empreendimentos ---------- */
+function updateFilterUI(){
+  document.getElementById('btnEmpFilter').classList.toggle('active', selEmps.size < allEmps.length);
+  document.getElementById('empCount').textContent = `${selEmps.size} de ${allEmps.length} selecionados`;
+}
+function renderEmpList(){
+  const q = document.getElementById('empSearch').value.toLowerCase().trim();
+  const list = document.getElementById('empList');
+  list.innerHTML = allEmps.filter(e => !q || e.toLowerCase().includes(q)).map(e =>
+    `<label><input type="checkbox" value="${esc(e)}" ${selEmps.has(e) ? 'checked' : ''}> ${esc(e)}</label>`).join('');
+}
+
+function initUI(){
+  const regs = [...new Set(ALL.map(u => u.regional).filter(Boolean))].sort(cmp);
+  const sel = document.getElementById('fRegional');
+  sel.innerHTML = '<option value="">Todas as regionais</option>' + regs.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+  sel.addEventListener('change', afterFilterChange);
+
+  allEmps = [...new Set(ALL.map(u => u.emp))].sort(cmp);
+  selEmps = new Set(allEmps);
+  renderEmpList(); updateFilterUI();
+
+  const panel = document.getElementById('empPanel');
+  document.getElementById('btnEmpFilter').addEventListener('click', e => { e.stopPropagation(); panel.classList.toggle('show'); });
+  panel.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => panel.classList.remove('show'));
+  document.getElementById('empSearch').addEventListener('input', renderEmpList);
+  document.getElementById('empList').addEventListener('change', e => {
+    if (e.target.type !== 'checkbox') return;
+    e.target.checked ? selEmps.add(e.target.value) : selEmps.delete(e.target.value);
+    afterFilterChange();
+  });
+  document.getElementById('empAll').addEventListener('click', () => {
+    const q = document.getElementById('empSearch').value.toLowerCase().trim();
+    const vis = allEmps.filter(e => !q || e.toLowerCase().includes(q));
+    const allOn = vis.every(e => selEmps.has(e));
+    vis.forEach(e => allOn ? selEmps.delete(e) : selEmps.add(e));
+    renderEmpList(); afterFilterChange();
+  });
+
+  document.getElementById('pivotBody').addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-k]'); if (!tr) return;
+    const k = tr.dataset.k;
+    if (expanded.has(k)){
+      expanded.delete(k);
+      if (k.startsWith('e|')) [...expanded].forEach(x => { if (x.startsWith('m|' + k.slice(2) + '|')) expanded.delete(x); });
+    } else expanded.add(k);
+    render();
+  });
+  document.getElementById('btnExpand').addEventListener('click', () => { expandAll(); render(); });
+  document.getElementById('btnCollapse').addEventListener('click', () => { expanded.clear(); render(); });
+
+  afterFilterChange();
+}
+
+/* =====================================================================
+   CARGA DOS ARQUIVOS
+   ===================================================================== */
+const XLSX_OPTS = {type:'array', cellFormula:false, cellStyles:false, cellNF:false, cellHTML:false, cellDates:false};
+function sheetRows(buf){
+  const wb = XLSX.read(buf, XLSX_OPTS);
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:true, defval:''});
+}
+const tick = () => new Promise(r => setTimeout(r, 0)); // deixa a tela atualizar entre planilhas pesadas
+
+async function fetchBuf(url, nome, obrigatorio){
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${nome} não encontrado (${res.status})`);
+    return await res.arrayBuffer();
+  } catch (e) {
+    if (obrigatorio) throw e;
+    console.warn(e);
+    return { erro: e.message };
+  }
+}
+
+async function load(){
+  const meta = document.getElementById('tbMeta');
+  const notice = document.getElementById('notice');
+  try {
+    const [bEtq, bDtl, bCons] = await Promise.all([
+      fetchBuf(URL_ETQ,  'REL_ETQCMCUNICPE.xlsx', true),
+      fetchBuf(URL_DTL,  'REL_DTLPCOIMV.xlsx', false),
+      fetchBuf(URL_CONS, 'Consulta.xlsx', false)
+    ]);
+
+    meta.textContent = 'Lendo REL_ETQCMCUNICPE...';  await tick();
+    const etq = sheetRows(bEtq);
+
+    let dtl = null, cons = null; const avisos = [];
+    if (bDtl.erro) avisos.push(bDtl.erro + ' — a margem usará o %VMI da Consulta.');
+    else { meta.textContent = 'Lendo REL_DTLPCOIMV...'; await tick(); dtl = sheetRows(bDtl); }
+    if (bCons.erro) avisos.push(bCons.erro + ' — sem ela não há CPV e as colunas % Mb ficam vazias.');
+    else { meta.textContent = 'Lendo Consulta...'; await tick(); cons = sheetRows(bCons); }
+
+    meta.textContent = 'Calculando...'; await tick();
+    const out = processData(etq, dtl, cons);
+    ALL = out.units;
+
+    if (out.livresSemCpv > 0 && cons)
+      avisos.push(`${out.livresSemCpv} unidade(s) livre(s) sem CPV na Consulta (ou sem preço gerencial) ficaram fora do cálculo de % Mb.`);
+    if (avisos.length){ notice.innerHTML = avisos.map(esc).join('<br>'); notice.classList.add('show'); }
+
+    document.getElementById('foot').textContent =
+      `Estoque Livre = Lançado, Exclusivo Plataforma, Não Lançado e Bloqueado · Preço gerencial = Valor do Imóvel − Bom Pagador − ${BP_PAGADORIA} · % Mb = média da margem das unidades (fórmula da Consulta, com %VMI da DTL).`;
+
+    const agora = new Date();
+    meta.innerHTML = `Atualizado: <b>${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR')}</b> · <b>${ALL.length}</b> unidades livres`;
+    initUI();
+  } catch (err) {
+    console.error(err);
+    meta.textContent = 'Erro ao carregar: ' + err.message;
+  }
+}
+document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
