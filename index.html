@@ -18,7 +18,7 @@
   --ink:#1F242D;
   --ink-dim:#646D7A;
 
-  /* Paleta da tabela (igual à tabela dinâmica de referência) */
+  /* Paleta da tabela */
   --hdr:#006B3F;        /* cabeçalho padrão */
   --hdr-aval:#7030A0;   /* cabeçalho "Avaliação" */
   --hdr-mb:#00D38D;     /* cabeçalhos "% Mb" */
@@ -59,13 +59,10 @@ input[type="checkbox"]{accent-color:var(--mrv-green);cursor:pointer;}
 }
 
 .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
-.filters select,.filters input[type="text"]{
-  border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);
-  padding:7px 10px;font-size:13px;min-width:200px;
-}
 .btn{
   border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:6px;
   padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
 }
 .btn:hover{background:#F0F4F8;}
 
@@ -76,6 +73,22 @@ input[type="checkbox"]{accent-color:var(--mrv-green);cursor:pointer;}
 .notice.show{display:block;}
 
 .table-scroll{overflow-x:auto;}
+
+/* ---------- Dropdown de filtro de empreendimentos no topo ---------- */
+.dropdown-container{position:relative;display:inline-block;}
+.fpanel{
+  display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:100;width:320px;
+  background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);padding:10px;text-align:left;font-weight:400;
+}
+.fpanel.show{display:block;}
+.fpanel input[type="text"]{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;margin-bottom:8px;}
+.flist{max-height:260px;overflow-y:auto;border-top:1px solid var(--line-soft);padding-top:6px;}
+.flist label{display:flex;gap:8px;align-items:center;padding:4px 2px;font-size:13px;cursor:pointer;}
+.flist label:hover{background:#F0F4F8;}
+.fhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:var(--ink-dim);}
+.fhead a{color:var(--mrv-green);font-weight:700;text-decoration:none;cursor:pointer;}
+.fhead a:hover{text-decoration:underline;}
 
 /* ---------- Tabela dinâmica ---------- */
 table.pivot{width:100%;border-collapse:collapse;font-size:15px;min-width:980px;}
@@ -106,94 +119,52 @@ table.pivot{width:100%;border-collapse:collapse;font-size:15px;min-width:980px;}
   text-align:center;vertical-align:-1px;user-select:none;
 }
 
-/* Filtro de empreendimentos (ícone no cabeçalho, como na tabela dinâmica) */
-.fbtn{
-  display:inline-flex;align-items:center;justify-content:center;width:22px;height:20px;
-  margin-left:8px;border:1px solid #fff;border-radius:2px;background:#fff;color:#444;
-  cursor:pointer;vertical-align:middle;padding:0;
-}
-.fbtn.active{background:#FFED9A;}
-.fbtn svg{width:12px;height:12px;}
-.fpanel{
-  display:none;position:absolute;left:0;top:100%;z-index:20;width:320px;
-  background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,.15);padding:10px;text-align:left;font-weight:400;
-}
-.fpanel.show{display:block;}
-.fpanel input[type="text"]{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;margin-bottom:8px;}
-.flist{max-height:260px;overflow-y:auto;border-top:1px solid var(--line-soft);padding-top:6px;}
-.flist label{display:flex;gap:8px;align-items:center;padding:3px 2px;font-size:13px;cursor:pointer;}
-.flist label:hover{background:#F0F4F8;}
-.fhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:var(--ink-dim);}
-.fhead a{color:var(--mrv-green);font-weight:700;text-decoration:none;cursor:pointer;}
-.fhead a:hover{text-decoration:underline;}
-
 .empty{padding:30px;text-align:center;color:var(--ink-dim);}
-.foot{margin-top:12px;font-size:12px;color:var(--ink-dim);}
 
-@media (prefers-reduced-motion:no-preference){ .pivot tr.r-emp:hover td,.pivot tr.r-mod:hover td{transition:filter .12s;} }
+/* ---------- Botão de Restaurar Controles (Modo Print) ---------- */
+#btnRestoreUI{
+  display:none;position:fixed;top:12px;right:12px;z-index:9999;
+  background:var(--ink);color:#fff;border:none;border-radius:6px;
+  padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
 
-/* ESTILOS PARA IMPRESSÃO / FOTO / PRINT */
+/* MODOS DE TELA E IMPRESSÃO (SÓ TABELA NO PRINT) */
+body.clean-mode .titleblock,
+body.clean-mode .filters,
+body.clean-mode .notice{
+  display:none !important;
+}
+body.clean-mode #btnRestoreUI{
+  display:block !important;
+}
+body.clean-mode .shell{
+  padding:10px !important;
+  max-width:100% !important;
+}
+body.clean-mode .panel{
+  border:none !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  background:transparent !important;
+}
+
 @media print {
-  body, html {
-    background: #fff !important;
-    color: #000 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-  .shell {
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-  }
-  .titleblock {
-    border: none !important;
-    box-shadow: none !important;
-    padding: 10px 0 !important;
-    margin-bottom: 10px !important;
-  }
-  .panel {
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    background: transparent !important;
-  }
-  .filters, .notice, .fbtn, .fpanel {
-    display: none !important;
-  }
-  .table-scroll {
-    overflow: visible !important;
-    max-height: none !important;
-    width: 100% !important;
-  }
-  table.pivot {
-    width: 100% !important;
-    min-width: 0 !important;
-    font-size: 11px !important;
-  }
-  .pivot th, .pivot td {
-    padding: 4px 6px !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  .pivot tr {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-  .pivot thead {
-    display: table-header-group !important;
-  }
-  .tg {
-    display: none !important;
-  }
+  body, html { background:#fff !important; color:#000 !important; padding:0 !important; margin:0 !important; }
+  .titleblock, .filters, .notice, #btnRestoreUI, .fpanel { display:none !important; }
+  .shell, .panel, .table-scroll { padding:0 !important; margin:0 !important; border:none !important; box-shadow:none !important; overflow:visible !important; width:100% !important; }
+  table.pivot { width:100% !important; min-width:0 !important; font-size:11px !important; }
+  .pivot th, .pivot td { padding:4px 6px !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .pivot tr { page-break-inside:avoid !important; break-inside:avoid !important; }
+  .pivot thead { display:table-header-group !important; }
+  .tg { display:none !important; }
 }
 </style>
 </head>
 <body>
+
+<button id="btnRestoreUI">Exibir controles (ESC)</button>
+
 <div class="shell">
 
   <div class="titleblock">
@@ -205,31 +176,34 @@ table.pivot{width:100%;border-collapse:collapse;font-size:15px;min-width:980px;}
     <div class="notice" id="notice"></div>
 
     <div class="filters">
+      <!-- Filtro de empreendimentos realocado para o topo -->
+      <div class="dropdown-container">
+        <button class="btn" id="btnEmpDropdown">
+          <span id="empDropdownLabel">Carregando empreendimentos...</span> ▾
+        </button>
+        <div class="fpanel" id="empPanel">
+          <input type="text" id="empSearch" placeholder="Pesquisar...">
+          <div class="fhead">
+            <span id="empCount"></span>
+            <div>
+              <a id="empAll" style="margin-right:8px;">Selecionar todos</a>
+              <a id="empClear">Limpar seleção</a>
+            </div>
+          </div>
+          <div class="flist" id="empList"></div>
+        </div>
+      </div>
+
       <button class="btn" id="btnExpand">Expandir tudo</button>
       <button class="btn" id="btnCollapse">Recolher tudo</button>
-      <button class="btn" id="btnPrint">Imprimir / Salvar PDF</button>
+      <button class="btn" id="btnCleanToggle" title="Oculta o topo para você tirar print somente da tabela">Ocultar topo (para Print)</button>
     </div>
 
     <div class="table-scroll">
       <table class="pivot" id="pivot">
         <thead>
           <tr>
-            <th class="left">Empreendimento
-              <button class="fbtn" id="btnEmpFilter" title="Filtrar empreendimentos" aria-label="Filtrar empreendimentos">
-                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14l-5.5 6.5V14l-3-1.5V8.5z"/></svg>
-              </button>
-              <div class="fpanel" id="empPanel">
-                <input type="text" id="empSearch" placeholder="Pesquisar...">
-                <div class="fhead">
-                  <span id="empCount"></span>
-                  <div>
-                    <a id="empAll" style="margin-right:8px;">Selecionar todos</a>
-                    <a id="empClear">Limpar seleção</a>
-                  </div>
-                </div>
-                <div class="flist" id="empList"></div>
-              </div>
-            </th>
+            <th class="left">Empreendimento</th>
             <th>Estoque Livre</th>
             <th class="aval">Avaliação</th>
             <th>Mín. $ Gerencial</th>
@@ -243,22 +217,20 @@ table.pivot{width:100%;border-collapse:collapse;font-size:15px;min-width:980px;}
         <tbody id="pivotBody"></tbody>
       </table>
     </div>
-    <div class="foot" id="foot"></div>
   </div>
 </div>
 
 <script>
 /* =====================================================================
    FONTES DE DADOS
-   Os três arquivos ficam na MESMA pasta/repositório deste index.html
    ===================================================================== */
 const BASE_URL = './';
 const CB = `?t=${Date.now()}`;
 const URL_ETQ  = `${BASE_URL}REL_ETQCMCUNICPE.xlsx${CB}`;   // estoque, tipologia, avaliação, valor do imóvel
-const URL_DTL  = `${BASE_URL}REL_DTLPCOIMV.xlsb${CB}`;      // Ajustado para .xlsb: % Valor Mínimo Imóvel (VMI) por unidade
+const URL_DTL  = `${BASE_URL}REL_DTLPCOIMV.xlsb${CB}`;      // Leitura em .xlsb
 const URL_CONS = `${BASE_URL}Consulta.xlsx${CB}`;           // CPV e premissas de margem por unidade
 
-const BP_PAGADORIA = 500; // mesmo valor fixo do painel de avaliações
+const BP_PAGADORIA = 500;
 
 /* ---------- utilidades ---------- */
 const norm = s => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -266,7 +238,6 @@ const num  = v => { const n = typeof v === 'number' ? v : parseFloat(String(v ??
 const key  = v => String(v ?? '').trim().toLowerCase();
 const esc  = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// "2,00%" -> 0.02 | 0.02 -> 0.02 | 2 -> 0.02
 function parsePct(v){
   if (v === '' || v == null) return null;
   if (typeof v === 'number') return Math.abs(v) > 1 ? v/100 : v;
@@ -277,7 +248,6 @@ function parsePct(v){
   return s.includes('%') ? n/100 : (Math.abs(n) > 1 ? n/100 : n);
 }
 
-// localiza coluna pelo cabeçalho (com fallback para a posição conhecida)
 function col(headerRow, name, fallback){
   const i = headerRow.findIndex(h => norm(h) === norm(name));
   return i >= 0 ? i : fallback;
@@ -287,18 +257,15 @@ function col(headerRow, name, fallback){
 const fmtN   = v => (v == null || !isFinite(v)) ? '-' : v.toLocaleString('pt-BR', {maximumFractionDigits:0});
 const fmtPct = v => (v == null || !isFinite(v)) ? '-' : (v*100).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + '%';
 
-// ordenação "estilo Excel": 2Q-Qui < 2QS-c < 2QS-V < 2Q-V
 const sortKey = s => String(s).toLowerCase().replace(/[-\/\s]/g, '');
 const cmp  = (a,b) => sortKey(a).localeCompare(sortKey(b), 'pt-BR', {numeric:true});
 
-// "MOD. 1" -> "Mod. 1"
 const fmtModulo = s => { const t = String(s||'').trim().toLowerCase(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : 'Sem módulo'; };
 
 /* =====================================================================
    PROCESSAMENTO
    ===================================================================== */
 function processData(etqRows, dtlRows, consRows){
-  /* --- DTL: % Valor Mínimo Imóvel por ID da unidade --- */
   const vmiDtl = {};
   if (dtlRows && dtlRows.length > 5){
     const h = dtlRows[4] || [];
@@ -312,7 +279,6 @@ function processData(etqRows, dtlRows, consRows){
     }
   }
 
-  /* --- Consulta: CPV e premissas por unidade --- */
   const cons = {};
   if (consRows && consRows.length > 1){
     const h = consRows[0];
@@ -333,7 +299,6 @@ function processData(etqRows, dtlRows, consRows){
     }
   }
 
-  /* --- ETQ: unidades --- */
   const units = [];
   let livresSemCpv = 0;
   for (let i = 7; i < etqRows.length; i++){
@@ -385,7 +350,7 @@ function processData(etqRows, dtlRows, consRows){
 
     units.push({ emp, modulo, tipologia, avaliacao, gerencial, mb });
   }
-  return { units, livresSemCpv, nCons: Object.keys(cons).length, nVmi: Object.keys(vmiDtl).length };
+  return { units, livresSemCpv };
 }
 
 /* ---------- agregação (Mín / Méd / Máx) ---------- */
@@ -440,7 +405,7 @@ function render(){
   const body = document.getElementById('pivotBody');
   const list = visibleUnits();
   if (!list.length){
-    body.innerHTML = `<tr><td colspan="9" class="empty">Nenhum empreendimento selecionado ou sem unidades livres para exibição.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" class="empty">Nenhum empreendimento selecionado ou sem unidades livres.</td></tr>`;
     return;
   }
   let html = '';
@@ -454,8 +419,24 @@ function render(){
       const kMod = 'm|' + emp + '|' + mod;
       html += rowHTML('r-mod', mod, 'ind2', kMod, aggregate(mList));
       if (!expanded.has(kMod)) return;
-      const tips = [...groupBy(mList, u => u.tipologia).entries()].sort((a,b) => cmp(a[0], b[0]));
-      tips.forEach(([tip, tList]) => { html += rowHTML('r-tip', tip, 'ind3', null, aggregate(tList)); });
+
+      // ORDENAÇÃO DE TIPOLOGIAS:
+      // Mais baratas primeiro; Quintais (Qui) sempre em último lugar.
+      const tips = [...groupBy(mList, u => u.tipologia).entries()]
+        .map(([tip, tList]) => ({ tip, tList, agg: aggregate(tList) }))
+        .sort((a, b) => {
+          const isQuiA = a.tip.toLowerCase().includes('qui');
+          const isQuiB = b.tip.toLowerCase().includes('qui');
+          if (isQuiA !== isQuiB) return isQuiA ? 1 : -1; // Quintais por último
+          const priceA = a.agg.avg ?? 0;
+          const priceB = b.agg.avg ?? 0;
+          if (priceA !== priceB) return priceA - priceB; // Mais barato primeiro
+          return cmp(a.tip, b.tip);
+        });
+
+      tips.forEach(({ tip, agg }) => {
+        html += rowHTML('r-tip', tip, 'ind3', null, agg);
+      });
     });
   });
   html += rowHTML('r-total', 'Total Geral', 'ind1', null, aggregate(list));
@@ -473,11 +454,19 @@ function afterFilterChange(){
   updateFilterUI();
 }
 
-/* ---------- painel de filtro de empreendimentos ---------- */
+/* ---------- Filtro de Empreendimentos no Topo ---------- */
 function updateFilterUI(){
-  document.getElementById('btnEmpFilter').classList.toggle('active', selEmps.size < allEmps.length);
+  const label = document.getElementById('empDropdownLabel');
+  if (selEmps.size === allEmps.length) {
+    label.textContent = `Empreendimentos (Todos - ${allEmps.length})`;
+  } else if (selEmps.size === 0) {
+    label.textContent = `Nenhum empreendimento selecionado`;
+  } else {
+    label.textContent = `Empreendimentos (${selEmps.size} de ${allEmps.length})`;
+  }
   document.getElementById('empCount').textContent = `${selEmps.size} de ${allEmps.length} selecionados`;
 }
+
 function renderEmpList(){
   const q = document.getElementById('empSearch').value.toLowerCase().trim();
   const list = document.getElementById('empList');
@@ -491,9 +480,13 @@ function initUI(){
   renderEmpList(); updateFilterUI();
 
   const panel = document.getElementById('empPanel');
-  document.getElementById('btnEmpFilter').addEventListener('click', e => { e.stopPropagation(); panel.classList.toggle('show'); });
+  document.getElementById('btnEmpDropdown').addEventListener('click', e => {
+    e.stopPropagation();
+    panel.classList.toggle('show');
+  });
   panel.addEventListener('click', e => e.stopPropagation());
   document.addEventListener('click', () => panel.classList.remove('show'));
+
   document.getElementById('empSearch').addEventListener('input', renderEmpList);
   document.getElementById('empList').addEventListener('change', e => {
     if (e.target.type !== 'checkbox') return;
@@ -501,7 +494,6 @@ function initUI(){
     afterFilterChange();
   });
 
-  // Selecionar todos os visíveis no filtro
   document.getElementById('empAll').addEventListener('click', () => {
     const q = document.getElementById('empSearch').value.toLowerCase().trim();
     const vis = allEmps.filter(e => !q || e.toLowerCase().includes(q));
@@ -509,7 +501,6 @@ function initUI(){
     renderEmpList(); afterFilterChange();
   });
 
-  // Limpar seleção (nenhum emp selecionado)
   document.getElementById('empClear').addEventListener('click', () => {
     selEmps.clear();
     renderEmpList(); afterFilterChange();
@@ -524,9 +515,19 @@ function initUI(){
     } else expanded.add(k);
     render();
   });
+
   document.getElementById('btnExpand').addEventListener('click', () => { expandAll(); render(); });
   document.getElementById('btnCollapse').addEventListener('click', () => { expanded.clear(); render(); });
-  document.getElementById('btnPrint').addEventListener('click', () => { window.print(); });
+
+  // Alternar modo limpo (para capturar print sem o topo)
+  const toggleCleanMode = () => document.body.classList.toggle('clean-mode');
+  document.getElementById('btnCleanToggle').addEventListener('click', toggleCleanMode);
+  document.getElementById('btnRestoreUI').addEventListener('click', toggleCleanMode);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.body.classList.contains('clean-mode')) {
+      document.body.classList.remove('clean-mode');
+    }
+  });
 
   afterFilterChange();
 }
@@ -579,9 +580,6 @@ async function load(){
     if (out.livresSemCpv > 0 && cons)
       avisos.push(`${out.livresSemCpv} unidade(s) livre(s) sem CPV na Consulta (ou sem preço gerencial) ficaram fora do cálculo de % Mb.`);
     if (avisos.length){ notice.innerHTML = avisos.map(esc).join('<br>'); notice.classList.add('show'); }
-
-    document.getElementById('foot').textContent =
-      `Estoque Livre = Lançado, Exclusivo Plataforma, Não Lançado e Bloqueado · Preço gerencial = Valor do Imóvel − Bom Pagador − ${BP_PAGADORIA} · % Mb = média da margem das unidades (fórmula da Consulta, com %VMI da DTL).`;
 
     const agora = new Date();
     meta.innerHTML = `Atualizado: <b>${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR')}</b> · <b>${ALL.length}</b> unidades livres`;
